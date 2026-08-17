@@ -18,11 +18,11 @@ const register = async (req,res) => {
                 message: 'user already exists'
             });
         }
-        const user = await user.create({ name,email,password});
-        const userResponse = user.toObject();
+        const newUser = await user.create({ name,email,password});
+        const userResponse = newUser.toObject();
         delete userResponse.password;
         
-        const token = generateToken(user._id, user.role);
+        const token = generateToken(newUser._id, newUser.role);
         res.status(201).json({
             status: 'success',
             token,
@@ -46,15 +46,15 @@ const login = async (req,res) => {
                 message: 'please provide email and password'
             });
           }
-          const user = await user.findOne({email}).select('+password');
-          if(!user || !(await user.matchPassword(password))){
+          const foundUser = await user.findOne({email}).select('+password');
+          if(!foundUser || !(await foundUser.matchPassword(password))){
             return res.status(401).json({
                 status: 'faild',
                 message: 'invalid email or password'
             });
           }
-          const token = generateToken(user._id, user.role);
-          const userResponse = user.toObject();
+          const token = generateToken(foundUser._id, foundUser.role);
+          const userResponse = foundUser.toObject();
           delete userResponse.password;
           res.status(200).json({
             status: 'success',

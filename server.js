@@ -9,7 +9,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const mongoose = require('mongoose');
 require('dotenv').config();
-const healthRoutes = require('./routes/healthRoutes');
+const healthRoutes = require('./routes/healthroutes');
 
 const app = express();
 app.use(express.json());
@@ -46,24 +46,25 @@ const io = new Server(server,{
 
 initSocket(io);
 
- app.use('/api/auth', require('./routes/authroutes'));
- // app.use('/api/events', require('./routes/Eventroutes'));
- // app.use('/api/messages', require('./routes/Messagerotes'));
- // app.use('/api/users', require('./routes/Userroutes'));
- // app.use('/api/registrations', require('./routes/Regstrationroutes'));
- // app.use('/api/categories', require('./routes/Catagoryroutes'));
+app.use('/api/auth', require('./routes/authroutes'));
+  app.use('/api/events', require('./routes/Eventroutes'));
+  app.use('/api/messages', require('./routes/Messagerotes'));
+  app.use('/api/users', require('./routes/Userroutes'));
+  app.use('/api/registrations', require('./routes/Regstrationroutes'));
+  app.use('/api/categories', require('./routes/Catagoryroutes'));
+// Temporarily disabled - healthRoutes loading as empty object
  app.use('/api', healthRoutes);
 
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.status(200).json({ message: 'Server is healthy' });
 });
 
-// 404 handler - must come after all routes
+
 app.all(/.*/, (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
-// Error handler - must come last
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
