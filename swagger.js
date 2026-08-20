@@ -14,12 +14,14 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
-        description: 'Development Server'
+        // Relative to wherever the docs are being served from, so "Try it out"
+        // works on the deployed host and locally without any extra config.
+        url: '/',
+        description: 'Current host'
       },
       {
-        url: process.env.API_URL || 'http://localhost:5000',
-        description: 'Production Server'
+        url: 'http://localhost:5000',
+        description: 'Local development'
       }
     ],
     components: {
