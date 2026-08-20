@@ -55,15 +55,26 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// Listen immediately so the platform always has a live server,
-// then connect to MongoDB alongside it. A slow or failing database
-// must not stop the process from accepting requests.
+// Bind a port straight away so the process is answering requests even before
+// the database is up. If the host already listens on this port (some
+// platforms import the app and provide their own listener), ignore the
+// collision instead of crashing the process.
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`Port ${PORT} already bound by the host; using its listener.`);
+    return;
+  }
+  throw err;
 });
 
+// Connect to MongoDB alongside the server rather than gating startup on it,
+// so a slow or unreachable database cannot stop the app from answering.
 connectDB().catch((err) => {
   console.error('MongoDB connection failed:', err.message);
 });
 
-module.exports = server;
+module.exports = app;
+module.exports.server = server;
+module.exports.io = io;
