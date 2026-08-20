@@ -5,7 +5,6 @@ const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandller');
 const AppError = require('./utiles/AppError');
 const initSocket = require('./socket.io/Socket.ioHandller');
-const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 require('dotenv').config();
 const healthRoutes = require('./routes/healthroutes');
@@ -13,12 +12,37 @@ const healthRoutes = require('./routes/healthroutes');
 const app = express();
 app.use(express.json());
 
-// Swagger Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  swaggerOptions: {
-    url: '/swagger.json'
-  }
-}));
+// Swagger Documentation. swagger-ui-express serves its assets out of
+// node_modules, which is not reliably bundled on serverless hosts, so the
+// scripts came back as HTML and the page rendered blank. Serve a small page
+// that loads the UI from a CDN and points it at our own spec instead.
+app.get('/api-docs', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send([
+    '<!DOCTYPE html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="utf-8" />',
+    '<meta name="viewport" content="width=device-width, initial-scale=1" />',
+    '<title>EventPulse API Docs</title>',
+    '<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />',
+    '</head>',
+    '<body>',
+    '<div id="swagger-ui"></div>',
+    '<script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin></script>',
+    '<script>',
+    'window.onload = function () {',
+    '  window.ui = SwaggerUIBundle({',
+    '    url: "/swagger.json",',
+    '    dom_id: "#swagger-ui",',
+    '    docExpansion: "list"',
+    '  });',
+    '};',
+    '</script>',
+    '</body>',
+    '</html>'
+  ].join('\n'));
+});
 
 // Swagger JSON endpoint
 app.get('/swagger.json', (req, res) => {
