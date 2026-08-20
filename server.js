@@ -35,6 +35,29 @@ const io = new Server(server, {
 
 initSocket(io);
 
+// Make sure the database is connected before any API route runs. Awaiting
+// here (rather than at boot) keeps the process awake through the handshake.
+app.use('/api', async (req, res, next) => {
+  // The health check reports on the database, so it must not be gated by it.
+  if (req.path === '/health') return next();
+
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('MongoDB connection failed:', err.name, '-', err.message);
+    const servers = err.reason && err.reason.servers;
+    if (servers) {
+      console.error('Topology:', err.reason.type);
+      for (const [host, desc] of servers) {
+        console.error('  ' + host + ' -> ' + desc.type +
+          (desc.error ? ' :: ' + desc.error.message : ' :: no error reported'));
+      }
+    }
+    next(err);
+  }
+});
+
 app.use('/api/auth', require('./routes/authroutes'));
 app.use('/api/events', require('./routes/Eventroutes'));
 app.use('/api/messages', require('./routes/Messagerotes'));
@@ -67,20 +90,6 @@ server.listen(PORT, () => {
     return;
   }
   throw err;
-});
-
-// Connect to MongoDB alongside the server rather than gating startup on it,
-// so a slow or unreachable database cannot stop the app from answering.
-connectDB().catch((err) => {
-  console.error('MongoDB connection failed:', err.name, '-', err.message);
-  const servers = err.reason && err.reason.servers;
-  if (servers) {
-    console.error('Topology:', err.reason.type);
-    for (const [host, desc] of servers) {
-      console.error('  ' + host + ' -> ' + desc.type +
-        (desc.error ? ' :: ' + desc.error.message : ' :: no error reported'));
-    }
-  }
 });
 
 module.exports = app;
