@@ -38,8 +38,13 @@ initSocket(io);
 // Make sure the database is connected before any API route runs. Awaiting
 // here (rather than at boot) keeps the process awake through the handshake.
 app.use('/api', async (req, res, next) => {
-  // The health check reports on the database, so it must not be gated by it.
-  if (req.path === '/health') return next();
+  // The health check reports on the database, so it must not be blocked by a
+  // failure -- but it should still trigger the connection, otherwise a cold
+  // instance always reports "disconnected" without ever having tried.
+  if (req.path === '/health') {
+    await connectDB().catch(() => {});
+    return next();
+  }
 
   try {
     await connectDB();
