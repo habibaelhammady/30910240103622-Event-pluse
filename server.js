@@ -72,7 +72,15 @@ server.listen(PORT, () => {
 // Connect to MongoDB alongside the server rather than gating startup on it,
 // so a slow or unreachable database cannot stop the app from answering.
 connectDB().catch((err) => {
-  console.error('MongoDB connection failed:', err.message);
+  console.error('MongoDB connection failed:', err.name, '-', err.message);
+  const servers = err.reason && err.reason.servers;
+  if (servers) {
+    console.error('Topology:', err.reason.type);
+    for (const [host, desc] of servers) {
+      console.error('  ' + host + ' -> ' + desc.type +
+        (desc.error ? ' :: ' + desc.error.message : ' :: no error reported'));
+    }
+  }
 });
 
 module.exports = app;
